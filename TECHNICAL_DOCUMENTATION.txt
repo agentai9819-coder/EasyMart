@@ -1,0 +1,1293 @@
+﻿================================================================================
+NEXTJS CHAT WIDGET FOR SALESFORCE - TECHNICAL DOCUMENTATION
+================================================================================
+Version: 1.0.0
+Date: December 11, 2025
+Author: Your Team
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Overview
+2. Architecture & System Design
+3. Technology Stack
+4. Project Structure
+5. How It Works (Complete Flow)
+6. Component Breakdown
+7. API Endpoints
+8. Deployment Guide
+9. Salesforce Integration
+10. Steps to Build from Scratch
+11. Configuration & Customization
+12. Troubleshooting
+13. Security Considerations
+14. Future Enhancements
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+Project Name: Next.js Chat Widget for Salesforce
+Purpose: A floating chat widget that enables product search and customer support
+         integration within Salesforce platforms.
+
+Key Features:
+- Floating chat button (💬) on bottom-right corner
+- Real-time product search functionality
+- AI-powered chat responses
+- Easy Salesforce integration (LWC)
+- Responsive design
+- Cross-domain compatibility
+
+Target Audience:
+- Salesforce users who need product search chat
+- Enterprise organizations
+- E-commerce platforms
+- Customer support teams
+
+Business Model:
+- SaaS (Software as a Service)
+- AppExchange listing (Managed Package)
+- Subscription-based pricing
+- Pay-per-message model (optional)
+
+================================================================================
+2. ARCHITECTURE & SYSTEM DESIGN
+================================================================================
+
+High-Level Architecture:
+┌─────────────────────────────────────────────────────────────────┐
+│                     SALESFORCE ORG                              │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Lightning Community / Page                              │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │  Lightning Web Component (LWC)                     │  │  │
+│  │  │  - chatWidgetEmbed.js                             │  │  │
+│  │  │  - Loads external script via document.body        │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                          ↓ (Script Injection)                   │
+├─────────────────────────────────────────────────────────────────┤
+│                   VERCEL (Deployment)                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Next.js Application                                     │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │  Frontend (React Components)                       │  │  │
+│  │  │  - ChatWidget.tsx                                 │  │  │
+│  │  │  - ChatWindow.tsx                                 │  │  │
+│  │  │  - ChatButton.tsx                                 │  │  │
+│  │  │  - ProductSearch.tsx                              │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │  Backend (API Routes)                             │  │  │
+│  │  │  - /api/chat - Chat message handling             │  │  │
+│  │  │  - /api/products - Product search               │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │  Public Assets                                    │  │  │
+│  │  │  - /public/chat-widget.js - Embed script         │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                          ↓ (API Calls)
+┌─────────────────────────────────────────────────────────────────┐
+│              EXTERNAL SERVICES (Optional)                        │
+│  - OpenAI API (for AI responses)                               │
+│  - Salesforce REST API (for data sync)                         │
+│  - Analytics Services                                          │
+└─────────────────────────────────────────────────────────────────┘
+
+Data Flow:
+1. User clicks chat button on Salesforce page
+2. LWC injects chat-widget.js script
+3. Script creates floating button and chat window in DOM
+4. User types message and clicks Send
+5. Message sent to /api/chat endpoint
+6. Backend processes message (optional AI processing)
+7. Response returned to frontend
+8. Chat window updated with response
+9. Optional: Product search query sent to /api/products
+10. Products displayed in chat window
+
+================================================================================
+3. TECHNOLOGY STACK
+================================================================================
+
+Frontend:
+- Next.js 16.0.8 (React Framework)
+- React 18.x (UI Library)
+- TypeScript (Type safety)
+- CSS Modules (Styling)
+- Vercel (Deployment platform)
+
+Backend:
+- Node.js (Runtime)
+- Next.js API Routes (Serverless functions)
+- TypeScript (Type safety)
+
+Integration:
+- Lightning Web Components (LWC) - Salesforce
+- HTML/JavaScript (Widget injection)
+
+Development Tools:
+- npm (Package manager)
+- Vercel CLI (Deployment)
+- TypeScript Compiler
+- ESLint (Code quality)
+
+Dependencies (package.json):
+{
+  "next": "latest",
+  "react": "latest",
+  "react-dom": "latest",
+  "typescript": "latest",
+  "eslint": "latest",
+  "eslint-config-next": "latest"
+}
+
+Optional Dependencies (for AI):
+- openai: "^4.x" (for ChatGPT integration)
+- axios: "^1.x" (for HTTP requests)
+
+================================================================================
+4. PROJECT STRUCTURE
+================================================================================
+
+nextjs-chat-widget/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx              # Root layout with HTML/Body tags
+│   │   ├── page.tsx                # Main demo page
+│   │   ├── page.module.css         # Styles for demo page
+│   │   ├── widget/
+│   │   │   └── page.tsx            # Widget-only page (for iframe)
+│   │   └── api/
+│   │       ├── chat/
+│   │       │   └── route.ts        # Chat API endpoint (POST /api/chat)
+│   │       └── products/
+│   │           └── route.ts        # Product search endpoint (GET /api/products)
+│   ├── components/
+│   │   ├── ChatWidget.tsx          # Main widget component (manages state)
+│   │   ├── ChatButton.tsx          # Floating button component
+│   │   ├── ChatWindow.tsx          # Chat message display
+│   │   └── ProductSearch.tsx       # Product search component
+│   ├── hooks/
+│   │   └── useChat.ts              # Custom hook for chat logic
+│   └── types/
+│       └── index.ts                # TypeScript type definitions
+├── public/
+│   └── chat-widget.js              # Standalone embed script
+├── .vercel/                        # Vercel deployment config
+├── package.json                    # Dependencies & scripts
+├── tsconfig.json                   # TypeScript configuration
+├── next.config.js                  # Next.js configuration
+├── README.md                       # Project documentation
+└── node_modules/                   # Installed dependencies
+
+File Size Reference:
+- chat-widget.js: ~8KB (minified: ~3KB)
+- Next.js build: ~2.5MB (all routes)
+- API routes: ~5KB each
+
+================================================================================
+5. HOW IT WORKS - COMPLETE FLOW
+================================================================================
+
+SCENARIO: User on Salesforce page clicks chat widget
+
+Step 1: Page Load
+├─ Salesforce page loads
+├─ Lightning Web Component (LWC) initializes
+├─ LWC detects it's not already loaded
+├─ LWC creates <script> element pointing to chat-widget.js
+└─ Script injected into document.body
+
+Step 2: Chat Widget Script Loads (chat-widget.js)
+├─ IIFE (Immediately Invoked Function Expression) executes
+├─ Checks if widget already exists (prevents duplicates)
+├─ Creates chat button element
+│  ├─ Position: fixed (bottom: 20px, right: 20px)
+│  ├─ Styling: Blue button with hover effects
+│  └─ Icon: 💬 emoji
+├─ Creates chat window element (initially hidden)
+│  ├─ Position: fixed (above button)
+│  ├─ Dimensions: 350px width × 500px height
+│  ├─ Contains: Header, Messages container, Input field
+│  └─ Style: White background with shadow
+├─ Appends both elements to document.body
+└─ Attaches click handlers
+
+Step 3: User Interaction - Open Chat
+├─ User clicks chat button
+├─ Click handler executes: chatWindow.style.display = 'flex'
+├─ Chat window becomes visible with animation
+├─ Welcome message displayed: "👋 Hello! How can I help you find a product?"
+└─ Input field ready for user to type
+
+Step 4: User Sends Message
+├─ User types: "Looking for laptops"
+├─ User clicks Send button
+├─ Message validation: Check if input.value.trim() is not empty
+├─ If valid:
+│  ├─ Create user message element
+│  ├─ Style it: Right-aligned, blue background
+│  ├─ Add to messagesContainer
+│  ├─ Clear input field
+│  ├─ Scroll to bottom
+│  └─ Send to backend API
+└─ If empty: Do nothing
+
+Step 5: Backend Processing (/api/chat)
+├─ POST request received at /api/chat
+├─ Body contains: { message: "Looking for laptops" }
+├─ Endpoint logic:
+│  ├─ Extract message from request body
+│  ├─ Convert to lowercase for processing
+│  ├─ Check for keywords (laptop, mouse, cable, etc.)
+│  ├─ Generate response based on keywords
+│  ├─ Query mock database for matching products
+│  └─ Return: { reply: "message", products: [] }
+├─ Response sent back to frontend
+└─ HTTP 200 OK with JSON response
+
+Step 6: Frontend Displays Response
+├─ Response received from API
+├─ Parse JSON response
+├─ Create bot message element
+├─ Style it: Left-aligned, gray background
+├─ Add to messagesContainer
+├─ Auto-scroll to latest message
+└─ Wait for next user input
+
+Step 7: Close Chat
+├─ User clicks close button (✕) in header
+├─ Click handler executes: chatWindow.style.display = 'none'
+├─ Chat window hidden
+├─ Chat button still visible
+└─ User can reopen by clicking button again
+
+COMPLETE MESSAGE FLOW:
+┌──────────┐
+│ User     │
+│ Clicks   │
+│ Button   │
+└────┬─────┘
+     ↓
+┌─────────────────┐
+│ Chat Opens      │
+│ Welcome shown   │
+└────┬────────────┘
+     ↓
+┌─────────────────┐
+│ User types      │
+│ "Laptops"       │
+└────┬────────────┘
+     ↓
+┌─────────────────┐
+│ Sends Message   │
+│ POST /api/chat  │
+└────┬────────────┘
+     ↓
+┌─────────────────────────────┐
+│ Backend Processing          │
+│ - Parse message             │
+│ - Search products database  │
+│ - Generate response         │
+└────┬────────────────────────┘
+     ↓
+┌──────────────────────┐
+│ Response returned    │
+│ { reply: "message" } │
+└────┬─────────────────┘
+     ↓
+┌──────────────────────┐
+│ Message displayed    │
+│ Chat window updated  │
+└──────────────────────┘
+
+================================================================================
+6. COMPONENT BREAKDOWN
+================================================================================
+
+6.1 CHATWIDGET.TSX (Main Component)
+────────────────────────────────────
+Purpose: Orchestrate the chat widget state and behavior
+Type: Client Component ('use client')
+Imports:
+- React hooks (useState)
+- useChat custom hook
+- ChatButton, ChatWindow components
+
+Key State:
+- isOpen: boolean (chat window visible/hidden)
+
+Key Functions:
+- toggleChat(): Toggle chat window open/closed
+- clearMessages(): Clear chat history when opening
+
+Responsibilities:
+- Render chat button
+- Render chat window (conditional)
+- Manage chat visibility state
+- Pass props to child components
+
+Props: None (root component)
+
+Returns JSX:
+- Conditional rendering of ChatWindow
+- Always render ChatButton
+
+6.2 CHATBUTTON.TSX (Button Component)
+─────────────────────────────────────
+Purpose: Render floating chat button
+Type: Client Component
+Props:
+- onClick: () => void (from parent)
+
+Key Features:
+- Fixed position (bottom: 20px, right: 20px)
+- Circular shape (border-radius: 50%)
+- Blue background (#0070f3)
+- Emoji icon (💬)
+- Hover effects (scale 1.1)
+
+Styling: Inline styles (cssText)
+Interaction: Click to toggle chat window
+
+6.3 CHATWINDOW.TSX (Chat Display)
+──────────────────────────────────
+Purpose: Display chat messages and input
+Type: Client Component
+Props:
+- messages: ChatMessage[] (array of messages)
+- input: string (current input value)
+- loading: boolean (show typing indicator)
+- onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+- onSubmit: (e: React.FormEvent) => void
+- onClose: () => void (close button handler)
+
+Key Features:
+- Auto-scroll to latest message
+- Message distinction (user vs bot)
+- Typing indicator
+- Empty state message
+
+Styling:
+- Fixed position
+- White background
+- Blue header
+- Shadow effects
+
+Layout:
+- Header (title + close button)
+- Messages container (scrollable)
+- Input container (input + send button)
+
+6.4 PRODUCTSEARCH.TSX (Search Component)
+─────────────────────────────────────────
+Purpose: Search for products in real-time
+Type: Client Component
+Props:
+- onProductSelect?: (product: Product) => void
+
+Key Features:
+- Real-time search as user types
+- API call to /api/products
+- Product card display
+- Image, name, price display
+
+API Call:
+GET /api/products?search={query}
+
+Response:
+{ products: Product[] }
+
+Loading State: Shows "Loading..." text
+
+Error Handling: Gracefully catches errors, shows empty results
+
+================================================================================
+7. API ENDPOINTS
+================================================================================
+
+7.1 POST /api/chat
+──────────────────
+Purpose: Process chat messages and return responses
+Method: POST
+Host: https://nextjs-chat-widget-xi.vercel.app
+Path: /api/chat
+
+Request Format:
+{
+  "message": "Looking for laptops"
+}
+
+Request Headers:
+Content-Type: application/json
+
+Response Format (200 OK):
+{
+  "reply": "I found some great laptops for you!",
+  "products": [
+    {
+      "id": "1",
+      "name": "Laptop Pro",
+      "description": "High-performance laptop",
+      "price": 1299,
+      "imageUrl": "/placeholder.png",
+      "category": "Electronics"
+    }
+  ]
+}
+
+Error Response (500):
+{
+  "reply": "Sorry, I encountered an error. Please try again."
+}
+
+Processing Logic:
+1. Extract message from request body
+2. Convert to lowercase
+3. Check for keywords:
+   - "laptop" → Show laptops
+   - "mouse" → Show accessories
+   - "cable" → Show cables
+4. Return matching products
+5. Generate contextual response
+
+7.2 GET /api/products
+─────────────────────
+Purpose: Search for products by query
+Method: GET
+Host: https://nextjs-chat-widget-xi.vercel.app
+Path: /api/products
+
+Query Parameters:
+- search: string (product search query)
+
+Example: GET /api/products?search=laptop
+
+Request Headers:
+Accept: application/json
+
+Response Format (200 OK):
+{
+  "products": [
+    {
+      "id": "1",
+      "name": "Laptop Pro",
+      "description": "High-performance laptop",
+      "price": 1299,
+      "imageUrl": "/placeholder.png",
+      "category": "Electronics"
+    }
+  ]
+}
+
+Empty Result:
+{
+  "products": []
+}
+
+Search Logic:
+1. Get search parameter
+2. Convert to lowercase
+3. Filter products by:
+   - Product name contains search
+   - Product description contains search
+   - Product category contains search
+4. Return matching products
+
+Performance:
+- In-memory database (mock data)
+- Instant response (<100ms)
+- No database queries needed
+
+================================================================================
+8. DEPLOYMENT GUIDE
+================================================================================
+
+8.1 VERCEL DEPLOYMENT
+─────────────────────
+
+Prerequisites:
+- Node.js installed
+- npm or yarn
+- Vercel account (free at vercel.com)
+- GitHub account (optional but recommended)
+
+Step 1: Install Vercel CLI
+$ npm install -g vercel
+
+Step 2: Navigate to project
+$ cd c:\Users\LENOVO\nextjs-chat-widget
+
+Step 3: Deploy
+$ vercel --prod
+
+First Time Setup:
+- Link to existing project? → No
+- Project name → nextjs-chat-widget
+- Framework → Next.js (auto-detected)
+- Root directory → .
+
+Vercel will:
+1. Build the project
+2. Run tests
+3. Deploy to CDN
+4. Provide production URL
+
+Output:
+Production: https://nextjs-chat-widget-xi.vercel.app
+
+Step 4: Verify Deployment
+- Visit production URL
+- Test chat widget
+- Check console for errors
+
+8.2 POST-DEPLOYMENT CHECKLIST
+──────────────────────────────
+
+□ Test chat button appears
+□ Test sending messages
+□ Test product search
+□ Check API endpoints respond
+□ Verify CORS headers
+□ Test on mobile devices
+□ Check performance (Lighthouse)
+□ Set up analytics
+□ Configure environment variables
+□ Set up error logging (Sentry)
+
+8.3 CUSTOM DOMAIN (Optional)
+─────────────────────────────
+
+In Vercel Dashboard:
+1. Project Settings → Domains
+2. Add custom domain
+3. Update DNS records
+4. Wait for propagation
+
+Example: chat-widget.yourcompany.com
+
+8.4 ENVIRONMENT VARIABLES
+──────────────────────────
+
+Create .env.local:
+CHAT_API_URL=https://nextjs-chat-widget-xi.vercel.app/api/chat
+PRODUCTS_API_URL=https://nextjs-chat-widget-xi.vercel.app/api/products
+OPENAI_API_KEY=sk-xxx (if using OpenAI)
+SALESFORCE_API_KEY=xxx (if integrating with Salesforce)
+
+In Vercel Dashboard:
+Settings → Environment Variables → Add variables
+
+================================================================================
+9. SALESFORCE INTEGRATION
+================================================================================
+
+9.1 LIGHTNING WEB COMPONENT SETUP
+──────────────────────────────────
+
+Step 1: Create LWC in your Salesforce Dev Org
+Location: Setup → Lightning Web Components → New
+
+Three Files to Create:
+
+FILE 1: chatWidgetEmbed.js
+────────────────────────────
+import { LightningElement, api } from 'lwc';
+
+export default class ChatWidgetEmbed extends LightningElement {
+    @api widgetTitle = 'Product Search Chat';
+    @api primaryColor = '#0070f3';
+    @api widgetUrl = 'https://nextjs-chat-widget-xi.vercel.app';
+    @api apiKey;
+
+    connectedCallback() {
+        this.loadChatWidgetScript();
+    }
+
+    loadChatWidgetScript() {
+        if (document.getElementById('nextjs-chat-widget-script')) return;
+
+        const script = document.createElement('script');
+        script.id = 'nextjs-chat-widget-script';
+        script.src = `${this.widgetUrl}/chat-widget.js`;
+        script.async = true;
+        
+        script.onload = () => {
+            console.log('✓ Chat widget loaded');
+            window.chatWidgetConfig = {
+                title: this.widgetTitle,
+                primaryColor: this.primaryColor,
+                apiKey: this.apiKey
+            };
+        };
+
+        document.body.appendChild(script);
+    }
+}
+
+FILE 2: chatWidgetEmbed.html
+────────────────────────────
+<template>
+    <!-- Chat widget will be injected by the script -->
+</template>
+
+FILE 3: chatWidgetEmbed.js-meta.xml
+────────────────────────────────────
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>59.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Chat Widget</masterLabel>
+    <description>Floating chat widget for product search</description>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__RecordPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightning__CommunityPage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__AppPage,lightning__RecordPage,lightning__HomePage,lightning__CommunityPage">
+            <property name="widgetTitle" type="String" label="Widget Title" 
+                      default="Product Search Chat" 
+                      description="Title displayed in chat header"/>
+            <property name="primaryColor" type="String" label="Primary Color" 
+                      default="#0070f3" 
+                      description="Button and header color (hex format)"/>
+            <property name="widgetUrl" type="String" label="Widget URL" 
+                      default="https://nextjs-chat-widget-xi.vercel.app" 
+                      description="URL of your Next.js widget"/>
+            <property name="apiKey" type="String" label="API Key" 
+                      description="Your Salesforce integration API key"/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
+
+Step 2: Add to Salesforce CSP Trusted Sites
+Location: Setup → Security → CSP Trusted Sites
+
+Configuration:
+- Trusted Site URL: https://nextjs-chat-widget-xi.vercel.app
+- Context: All
+- ✓ Allow Frame Requests
+- ✓ Allow Script Requests
+- Save
+
+Step 3: Add LWC to Lightning Page
+1. Go to Setup → Lightning App Builder
+2. Create or edit a Lightning Page
+3. Click "+" to add component
+4. Search for "Chat Widget Embed"
+5. Drag component to page
+6. Configure properties (optional):
+   - Widget Title: "Product Search Chat"
+   - Primary Color: "#0070f3"
+   - Widget URL: "https://nextjs-chat-widget-xi.vercel.app"
+7. Save and activate
+
+Step 4: Test Integration
+1. Navigate to the page with LWC
+2. Look for 💬 button in bottom-right
+3. Click to open chat
+4. Send test message
+5. Check browser console (F12) for errors
+
+9.2 TROUBLESHOOTING SALESFORCE INTEGRATION
+───────────────────────────────────────────
+
+Issue: "Failed to load widget" error
+Solution: 
+- Check CSP Trusted Sites configuration
+- Verify URL is correct in LWC
+- Clear Salesforce cache (Setup → System Overview → Clear Cache)
+- Check browser console for detailed errors
+
+Issue: Chat button appears but doesn't open
+Solution:
+- Check if script loaded successfully
+- Verify browser allows cross-domain JavaScript
+- Check for CSS conflicts with Salesforce styles
+
+Issue: CORS errors in console
+Solution:
+- Add domain to CSP Trusted Sites
+- Verify next.config.js has proper CORS headers
+- Test with incognito window (bypasses cache)
+
+Issue: Chat window appears off-screen
+Solution:
+- Check z-index values (should be 999999)
+- Verify position: fixed CSS is applied
+- Test on different screen resolutions
+
+9.3 ADVANCED INTEGRATION
+────────────────────────
+
+Connect to Salesforce Data:
+1. Create Apex controller to fetch products from Salesforce
+2. Call Apex from LWC
+3. Pass data to chat-widget.js
+
+Example Apex:
+public class ProductController {
+    @AuraEnabled(cacheable=true)
+    public static List<Product__c> getProducts(String searchTerm) {
+        return [SELECT Id, Name, Description__c, Price__c FROM Product__c 
+                WHERE Name LIKE :('%' + searchTerm + '%')];
+    }
+}
+
+Use Cases:
+- Salesforce Commerce Cloud integration
+- Service Cloud (Cases, Accounts)
+- Custom objects
+- Salesforce data synchronization
+
+================================================================================
+10. STEPS TO BUILD FROM SCRATCH
+================================================================================
+
+PART 1: PROJECT SETUP
+─────────────────────
+
+Step 1: Create Next.js Project
+$ npx create-next-app@latest nextjs-chat-widget --typescript --tailwind --app
+
+Options:
+✓ Use TypeScript? → Yes
+✓ Use ESLint? → Yes
+✓ Use Tailwind CSS? → Yes (or CSS Modules)
+✓ Use src/ directory? → Yes
+✓ Use App Router? → Yes
+
+Step 2: Navigate to project
+$ cd nextjs-chat-widget
+
+Step 3: Install dependencies
+$ npm install
+
+Step 4: Create directory structure
+$ mkdir -p src/components src/hooks src/types src/app/api/chat src/app/api/products src/app/widget
+
+PART 2: CREATE TYPE DEFINITIONS
+────────────────────────────────
+
+Step 1: Create src/types/index.ts
+Export interfaces:
+- ChatMessage (id, sender, content, timestamp)
+- Product (id, name, description, price, imageUrl, category)
+- ChatResponse (reply, products)
+
+PART 3: CREATE REACT COMPONENTS
+────────────────────────────────
+
+Step 1: Create ChatButton component (src/components/ChatButton.tsx)
+- Props: onClick function
+- Render: Fixed position button with emoji
+- Styling: Inline CSS with hover effects
+- Return: JSX button element
+
+Step 2: Create ChatWindow component (src/components/ChatWindow.tsx)
+- Props: messages[], input, loading, handlers
+- Render: Header, messages container, input field
+- Features: Auto-scroll, message styling, close button
+- Return: JSX div with full chat interface
+
+Step 3: Create ProductSearch component (src/components/ProductSearch.tsx)
+- Props: onProductSelect callback
+- Features: Real-time search
+- API call: GET /api/products?search={query}
+- Return: Product cards
+
+Step 4: Create ChatWidget component (src/components/ChatWidget.tsx)
+- Imports: useChat hook, child components
+- State: isOpen boolean
+- Logic: toggleChat function
+- Return: ChatButton + conditional ChatWindow
+
+PART 4: CREATE CUSTOM HOOK
+──────────────────────────
+
+Step 1: Create src/hooks/useChat.ts
+- State: messages[], input, loading
+- Functions:
+  - sendMessage(message: string)
+  - handleInputChange(e)
+  - handleSubmit(e)
+- Return: Object with all state and functions
+
+Fetch Logic:
+POST /api/chat with message
+Parse response
+Update messages state
+
+PART 5: CREATE API ENDPOINTS
+─────────────────────────────
+
+Step 1: Create src/app/api/chat/route.ts
+- Method: POST
+- Logic:
+  - Parse message from request
+  - Search for keywords
+  - Filter mock products
+  - Generate response
+- Return: NextResponse.json({ reply, products })
+
+Step 2: Create src/app/api/products/route.ts
+- Method: GET
+- Parameters: ?search={query}
+- Logic:
+  - Parse search parameter
+  - Filter products by name/description/category
+  - Return matching products
+- Return: NextResponse.json({ products })
+
+PART 6: CREATE PAGES
+────────────────────
+
+Step 1: Create src/app/layout.tsx
+- Import React, fonts, styles
+- Return: <html> and <body> tags
+- Export: RootLayout component
+- Include: metadata
+
+Step 2: Create src/app/page.tsx
+- 'use client' directive
+- Import: ChatWidget, styles
+- Return: Demo page with chat widget
+- Features: Description, features list, integration guide
+
+Step 3: Create src/app/widget/page.tsx
+- 'use client' directive
+- Import: ChatWidget
+- Return: Chat widget only (no demo content)
+
+PART 7: CREATE STYLING
+──────────────────────
+
+Step 1: Create src/app/page.module.css
+- .main: Full screen with gradient
+- .content: Center container with white background
+- .code: Code snippet styling
+- Colors, fonts, spacing
+
+PART 8: CONFIGURE PROJECT
+──────────────────────────
+
+Step 1: Update tsconfig.json
+- baseUrl: "src"
+- paths: { "@/*": "./*" }
+
+Step 2: Update next.config.js
+- reactStrictMode: true
+- CORS headers configuration
+- Environment variables
+
+Step 3: Update package.json
+- Scripts: dev, build, start, lint
+- Dependencies versions
+
+PART 9: CREATE EMBED SCRIPT
+──────────────────────────
+
+Step 1: Create public/chat-widget.js
+- IIFE function
+- Check for duplicate elements
+- Create button element
+- Create chat window element
+- Add event listeners
+- Append to document.body
+
+PART 10: DEPLOYMENT
+───────────────────
+
+Step 1: Test locally
+$ npm run dev
+Visit http://localhost:3000
+
+Step 2: Build production
+$ npm run build
+
+Step 3: Deploy to Vercel
+$ npm install -g vercel
+$ vercel --prod
+
+Get production URL from output
+
+PART 11: SALESFORCE INTEGRATION
+───────────────────────────────
+
+Step 1: Create LWC in Salesforce
+- chatWidgetEmbed.js
+- chatWidgetEmbed.html
+- chatWidgetEmbed.js-meta.xml
+
+Step 2: Add to CSP Trusted Sites
+- Setup → Security → CSP Trusted Sites
+- Add Vercel URL
+
+Step 3: Add to Lightning Page
+- Drag component to page
+- Configure properties
+- Save and activate
+
+PART 12: TESTING & VALIDATION
+──────────────────────────────
+
+Test Checklist:
+□ Chat button appears
+□ Chat window opens/closes
+□ Messages send/receive
+□ Product search works
+□ Responsive on mobile
+□ No console errors
+□ API endpoints respond
+□ Salesforce integration works
+□ Performance is acceptable
+□ No security issues
+
+================================================================================
+11. CONFIGURATION & CUSTOMIZATION
+================================================================================
+
+11.1 CUSTOMIZE APPEARANCE
+─────────────────────────
+
+Button Colors:
+In chat-widget.js, update backgroundColor:
+backgroundColor: '#0070f3'  // Change to any hex color
+
+Chat Window Size:
+width: '350px'
+height: '500px'
+// Adjust as needed
+
+Header Title:
+In chat-widget.js:
+header.innerHTML = '<h3>Your Title Here</h3>...'
+
+Position:
+bottom: '20px'
+right: '20px'
+// Change positioning
+
+11.2 CUSTOMIZE BEHAVIOR
+────────────────────────
+
+Welcome Message:
+In chat-widget.js:
+welcomeMsg.innerHTML = '👋 Your custom message here'
+
+Message Styling:
+Update backgroundColor, color, padding for messages
+
+Auto-open on Page Load:
+Add to connectedCallback in LWC:
+setTimeout(() => {
+    const btn = document.getElementById('nextjs-chat-button');
+    if (btn) btn.click();
+}, 1000);
+
+Close on Message Send:
+In chat-widget.js sendBtn.onclick:
+chatWindow.style.display = 'none';
+
+11.3 INTEGRATE WITH EXTERNAL SERVICES
+──────────────────────────────────────
+
+OpenAI Integration:
+1. Get API key from openai.com
+2. Add to environment: OPENAI_API_KEY=sk-xxx
+3. Update /api/chat:
+
+import { OpenAI } from 'openai';
+const openai = new OpenAI(process.env.OPENAI_API_KEY);
+
+async function getAIResponse(message) {
+    const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: message }],
+    });
+    return response.choices[0].message.content;
+}
+
+Salesforce API Integration:
+1. Create Connected App in Salesforce
+2. Get Client ID and Secret
+3. Implement OAuth flow
+4. Query Salesforce data from API routes
+
+Database Integration:
+- PostgreSQL, MongoDB, Firebase, etc.
+- Replace mock products array with database queries
+
+11.4 ANALYTICS & MONITORING
+────────────────────────────
+
+Add Sentry for error tracking:
+1. npm install @sentry/nextjs
+2. Init Sentry in next.config.js
+3. Errors automatically tracked
+
+Add Google Analytics:
+1. npm install next-ga
+2. Track page views and events
+3. Monitor user behavior
+
+Add custom logging:
+// In API routes
+console.log('Chat message:', message);
+console.log('Response time:', Date.now() - startTime);
+
+================================================================================
+12. TROUBLESHOOTING
+================================================================================
+
+12.1 COMMON ISSUES & SOLUTIONS
+──────────────────────────────
+
+Issue: "Cannot find module '@/components/ChatWidget'"
+Solution:
+- Check tsconfig.json has: "baseUrl": "src" and path aliases
+- Restart TypeScript server (Ctrl+Shift+P → Restart TS)
+- Verify file exists at src/components/ChatWidget.tsx
+
+Issue: Chat button not appearing
+Solution:
+- Check script loaded without errors (Console tab)
+- Verify z-index is 999999
+- Check if document.body is available (not in iframe)
+- Verify CSS is not conflicting with Salesforce styles
+
+Issue: Messages not sending
+Solution:
+- Check API endpoint exists and is working
+- Use curl to test API: curl -X POST http://localhost:3000/api/chat -d '{"message":"test"}'
+- Check network tab in DevTools for request/response
+- Verify JSON parsing works
+
+Issue: Salesforce CSP blocking widget
+Solution:
+- Add domain to CSP Trusted Sites
+- Verify "Allow Script Requests" is checked
+- Clear Salesforce cache
+- Check security logs in Salesforce
+
+Issue: Widget appears off-screen
+Solution:
+- Check position: fixed CSS properties
+- Test on different screen sizes
+- Check for parent elements with overflow: hidden
+- Adjust bottom/right values in chat-widget.js
+
+Issue: Performance is slow
+Solution:
+- Check bundle size: npm run build
+- Optimize images
+- Enable compression in next.config.js
+- Use Vercel Analytics to identify bottlenecks
+- Consider code splitting for large components
+
+12.2 DEBUGGING TECHNIQUES
+─────────────────────────
+
+Browser DevTools:
+1. Console: Check for errors, use console.log()
+2. Network: See API calls and responses
+3. Elements: Inspect HTML structure
+4. Performance: Check load times
+
+Vercel Logs:
+1. Dashboard → Deployments → Click deployment
+2. View real-time logs
+3. Check for runtime errors
+
+Testing API Locally:
+$ curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"laptop"}'
+
+Enable Debug Mode:
+In next.config.js:
+env: {
+    DEBUG: true
+}
+
+Then in components:
+if (process.env.DEBUG) console.log('Debug info', value);
+
+================================================================================
+13. SECURITY CONSIDERATIONS
+================================================================================
+
+13.1 SECURITY BEST PRACTICES
+────────────────────────────
+
+Input Validation:
+- Validate message length (max 500 characters)
+- Check for XSS attempts
+- Sanitize user input
+
+export function sanitizeInput(input: string): string {
+    return input.replace(/[<>]/g, '');
+}
+
+API Security:
+- Implement rate limiting (prevent spam)
+- Use HTTPS only
+- Validate request headers
+- Implement CORS properly
+
+Rate Limiting (example):
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+
+app.post('/api/chat', limiter, handler);
+
+Authentication:
+- Use API keys for backend requests
+- Implement JWT tokens if needed
+- Validate Salesforce session
+
+Error Handling:
+- Don't expose sensitive errors to client
+- Log errors on server side
+- Return generic error messages to user
+
+13.2 COMPLIANCE
+───────────────
+
+GDPR:
+- Get user consent before collecting data
+- Provide data export functionality
+- Implement data deletion
+
+HIPAA (if healthcare):
+- Encrypt data in transit and at rest
+- Implement audit logging
+- Regular security audits
+
+PCI DSS (if handling payments):
+- Never store credit card data
+- Use PCI-compliant payment processor
+- Regular security updates
+
+13.3 DEPENDENCY SECURITY
+────────────────────────
+
+Keep dependencies updated:
+$ npm audit
+$ npm audit fix
+$ npm update
+
+Check for vulnerabilities:
+$ npm audit --audit-level=moderate
+
+================================================================================
+14. FUTURE ENHANCEMENTS
+================================================================================
+
+Phase 1 (MVP - Current):
+✅ Chat messaging
+✅ Product search
+✅ Salesforce integration (LWC)
+✅ Basic styling
+✅ Production deployment
+
+Phase 2 (Advanced Features):
+□ AI-powered responses (OpenAI/Claude)
+□ Real-time typing indicator
+□ File upload support
+□ Image recognition
+□ Multi-language support
+□ Voice chat
+
+Phase 3 (Enterprise):
+□ Analytics dashboard
+□ Customer metrics
+□ Conversation history
+□ Agent handoff
+□ Integration with Service Cloud
+□ Custom branding per customer
+□ White-label solution
+
+Phase 4 (Monetization):
+□ Subscription billing
+□ Usage analytics
+□ Premium features
+□ AppExchange listing
+□ Managed package
+□ Support/SLA tiers
+
+Technical Roadmap:
+1. Implement WebSocket for real-time updates
+2. Add database (MongoDB/PostgreSQL)
+3. Create admin dashboard
+4. Implement authentication
+5. Add webhook support
+6. Create Salesforce integration with Apex
+7. Build mobile app (React Native)
+8. Implement CI/CD pipeline
+
+Performance Optimization:
+1. Lazy load components
+2. Implement caching
+3. Database indexing
+4. CDN for static assets
+5. Background job processing
+
+Scalability:
+1. Horizontal scaling (serverless)
+2. Load balancing
+3. Database replication
+4. Message queue (for high volume)
+
+================================================================================
+QUICK REFERENCE
+================================================================================
+
+Important URLs:
+- Production: https://nextjs-chat-widget-xi.vercel.app
+- API Chat: https://nextjs-chat-widget-xi.vercel.app/api/chat
+- API Products: https://nextjs-chat-widget-xi.vercel.app/api/products
+
+Key Files:
+- Main Script: /public/chat-widget.js
+- Chat Component: /src/components/ChatWidget.tsx
+- Chat Hook: /src/hooks/useChat.ts
+- API Routes: /src/app/api/*/route.ts
+- LWC: chatWidgetEmbed.js (in Salesforce)
+
+Commands:
+- Local Dev: npm run dev
+- Build: npm run build
+- Deploy: vercel --prod
+- Test API: curl -X POST http://localhost:3000/api/chat
+
+Contacts:
+- Support: support@example.com
+- Sales: sales@example.com
+- Technical Issues: tech@example.com
+
+================================================================================
+CONCLUSION
+================================================================================
+
+This documentation provides a complete overview of the Next.js Chat Widget
+for Salesforce project. It covers architecture, implementation, deployment,
+and integration details.
+
+For questions or issues, refer to the relevant section or contact support.
+
+Document Version: 1.0
+Last Updated: December 11, 2025
+Next Review: March 11, 2026
+
+==============================================================================

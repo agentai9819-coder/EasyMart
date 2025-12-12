@@ -1,0 +1,33 @@
+{
+  "name": "nextjs-chat-widget",
+  "version": "1.0.0",
+  "description": "A chat widget for facilitating product search integrated into Salesforce.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "25.0.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "typescript": "latest"
+  },
+  "keywords": [
+    "chat",
+    "widget",
+    "product search",
+    "salesforce"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
