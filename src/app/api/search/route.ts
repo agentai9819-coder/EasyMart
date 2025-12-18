@@ -158,28 +158,16 @@ async function getAccessToken(): Promise<string> {
  */
 function normalizeProduct(product: CommerceProduct): NormalizedProduct {
     // Defensive extraction following Commerce Storefront response shape
-    const id = product?.id || '';
-    const name = product?.name || '';
+    // Support both Commerce Storefront product shape and our Apex product DTO
+    const id = (product as any)?.productId || (product as any)?.id || '';
+    const name = (product as any)?.productName || (product as any)?.name || '';
 
-    // Prefer unitPrice, fallback to listPrice
-    const unitPrice = product?.prices?.unitPrice;
-    const listPrice = product?.prices?.listPrice;
-    const currency = product?.prices?.currencyIsoCode || 'USD';
+    const unitPrice = (product as any)?.unitPrice || (product as any)?.prices?.unitPrice || (product as any)?.prices?.listPrice || 0;
+    const currency = (product as any)?.currency || (product as any)?.prices?.currencyIsoCode || 'USD';
 
-    const price = (typeof unitPrice === 'number')
-        ? unitPrice
-        : (typeof listPrice === 'number' ? listPrice : 0);
+    const imageUrl = (product as any)?.imageUrl || (product as any)?.defaultImage?.url || null;
 
-    // Image from defaultImage.url if present
-    const imageUrl = product?.defaultImage?.url || null;
-
-    return {
-        id,
-        name,
-        price,
-        currency,
-        imageUrl,
-    };
+    return { id, name, price: unitPrice, currency, imageUrl };
 }
 
 export async function POST(request: Request) {
@@ -214,38 +202,28 @@ export async function POST(request: Request) {
         // TODO: When JWT is ready, this will automatically authenticate
         const accessToken = await getAccessToken();
 
-        // ===== BUILD COMMERCE API ENDPOINT =====
-        const searchUrl = new URL(
-            `/services/data/${apiVersion}/commerce/webstores/${webStoreId}/search/products`,
-            instanceUrl
-        );
+        // ===== CALL APEX SEARCH ENDPOINT =====
+        const apexUrl = new URL('/services/apexrest/commerce/search', instanceUrl);
 
-        // Add query parameters
-        searchUrl.searchParams.append('q', query.trim());
-        searchUrl.searchParams.append('pageSize', '10');
-        searchUrl.searchParams.append('effectiveAccountId', effectiveAccountId);
-
-        // ===== CALL SALESFORCE COMMERCE API =====
-        const response = await fetch(searchUrl.toString(), {
-            method: 'GET',
+        const response = await fetch(apexUrl.toString(), {
+            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
             },
+            body: JSON.stringify({ query: query.trim(), pageSize: 10, effectiveAccountId }),
         });
 
         if (!response.ok) {
             const error = await response.text();
-            console.error('Salesforce API error:', error);
-            throw new Error(
-                `Salesforce API returned ${response.status}: ${error}`
-            );
+            console.error('Apex search API error:', error);
+            throw new Error(`Apex search API returned ${response.status}: ${error}`);
         }
 
         const commerceData = await response.json();
 
-        // Defensive: ensure results is an array
-        const rawResults = Array.isArray(commerceData?.results) ? commerceData.results : [];
+        // Defensive: ensure products is an array
+        const rawResults = Array.isArray(commerceData?.products) ? commerceData.products : [];
 
         // ===== NORMALIZE RESPONSE =====
         const products: NormalizedProduct[] = rawResults.map((product: any) =>
