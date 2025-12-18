@@ -2,6 +2,8 @@ export interface ChatMessage {
     id: string;
     sender: 'user' | 'bot';
     content: string;
+    // Optional structured products returned by bot messages
+    products?: Product[];
     timestamp: Date;
 }
 

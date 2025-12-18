@@ -50,16 +50,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                 ) : (
                     messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            style={{
-                                ...styles.message,
-                                ...(msg.sender === 'user'
-                                    ? styles.userMessage
-                                    : styles.botMessage),
-                            }}
-                        >
-                            {msg.content}
+                        <div key={msg.id}>
+                            <div
+                                style={{
+                                    ...styles.message,
+                                    ...(msg.sender === 'user' ? styles.userMessage : styles.botMessage),
+                                }}
+                            >
+                                {msg.content}
+                            </div>
+
+                            {/* Render product cards when bot message includes structured products */}
+                            {msg.products && msg.products.length > 0 && (
+                                <div style={styles.productList}>
+                                    {msg.products.map((p) => (
+                                        <div key={p.id} style={styles.productCardInline}>
+                                            {p.imageUrl && (
+                                                <img src={p.imageUrl} alt={p.name} style={styles.productThumb} />
+                                            )}
+                                            <div style={styles.productInfo}>
+                                                <div style={styles.productName}>{p.name}</div>
+                                                <div style={styles.productPrice}>${p.price}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
@@ -145,6 +161,38 @@ const styles = {
     },
     typing: {
         fontStyle: 'italic' as const,
+    },
+    productList: {
+        display: 'flex' as const,
+        flexDirection: 'column' as const,
+        gap: '8px',
+        marginTop: '8px',
+    },
+    productCardInline: {
+        display: 'flex' as const,
+        gap: '8px',
+        padding: '8px',
+        border: '1px solid #e9ecef',
+        borderRadius: '6px',
+        alignItems: 'center' as const,
+    },
+    productThumb: {
+        width: '64px',
+        height: '64px',
+        objectFit: 'cover' as const,
+        borderRadius: '4px',
+    },
+    productInfo: {
+        display: 'flex' as const,
+        flexDirection: 'column' as const,
+    },
+    productName: {
+        fontSize: '14px',
+        fontWeight: 600,
+    },
+    productPrice: {
+        color: '#0070f3',
+        fontWeight: 'bold' as const,
     },
     inputContainer: {
         display: 'flex' as const,

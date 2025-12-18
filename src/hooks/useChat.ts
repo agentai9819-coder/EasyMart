@@ -33,12 +33,20 @@ const useChat = (): UseChatReturn => {
                 content: message,
                 timestamp: new Date(),
             };
+            // Attach structured products to the bot message when present
             const botMessage: ChatMessage = {
                 id: (Date.now() + 1).toString(),
                 sender: 'bot',
                 content: data.reply,
+                products: data.products && Array.isArray(data.products) ? data.products : undefined,
                 timestamp: new Date(),
             };
+
+            // Debugging aid: confirm product payload flows from backend
+            if (botMessage.products && botMessage.products.length > 0) {
+                // eslint-disable-next-line no-console
+                console.log('Received products from backend:', botMessage.products);
+            }
             
             setMessages((prev) => [...prev, userMessage, botMessage]);
         } catch (error) {

@@ -163,7 +163,10 @@ function normalizeProduct(product: CommerceProduct): NormalizedProduct {
     const name = (product as any)?.productName || (product as any)?.name || '';
 
     const unitPrice = (product as any)?.unitPrice || (product as any)?.prices?.unitPrice || (product as any)?.prices?.listPrice || 0;
-    const currency = (product as any)?.currency || (product as any)?.prices?.currencyIsoCode || 'USD';
+        const currency = (product as any)?.currency
+            || (product as any)?.currencyIsoCode
+            || (product as any)?.prices?.currencyIsoCode
+            || 'USD';
 
     const imageUrl = (product as any)?.imageUrl || (product as any)?.defaultImage?.url || null;
 
