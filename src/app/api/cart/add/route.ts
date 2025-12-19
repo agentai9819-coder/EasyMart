@@ -24,15 +24,25 @@ export async function POST(request: Request) {
             );
         }
 
+        // Build payload and log for debugging (temporary)
+        const payload = {
+            productId: productId.trim(),
+            quantity,
+            sku: sku || null,
+        };
+
+        // Log what we will send to Apex and the configured effective account id
+        // (non-sensitive values only)
+        // eslint-disable-next-line no-console
+        console.log('Cart API payload ->', JSON.stringify(payload));
+        // eslint-disable-next-line no-console
+        console.log('Configured SALESFORCE_EFFECTIVE_ACCOUNT_ID ->', process.env.SALESFORCE_EFFECTIVE_ACCOUNT_ID);
+
         // Call Salesforce Apex REST API: CartApi
         const apexResponse = await callSalesforceApi(
             '/services/apexrest/CartApi',
             'POST',
-            {
-                productId: productId.trim(),
-                quantity,
-                sku: sku || null,
-            }
+            payload
         );
 
         if (!apexResponse.success) {

@@ -50,7 +50,13 @@ export async function POST(request: Request) {
             // eslint-disable-next-line no-console
             console.error('Error calling internal search API:', err);
             const fallbackReply = `Unable to perform product search; showing sample results.`;
-            return NextResponse.json({ reply: fallbackReply, products: mockProducts });
+            const respPayload: any = { reply: fallbackReply, products: mockProducts };
+            // Include truncated debug info when explicitly enabled
+            if (process.env.DEBUG_SEARCH === 'true') {
+                const msg = err instanceof Error ? err.message : String(err);
+                respPayload.searchError = msg.slice(0, 500);
+            }
+            return NextResponse.json(respPayload);
         }
     } catch (error) {
         return NextResponse.json(

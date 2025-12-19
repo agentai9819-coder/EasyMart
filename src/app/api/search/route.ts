@@ -208,6 +208,10 @@ export async function POST(request: Request) {
         // ===== CALL APEX SEARCH ENDPOINT =====
         const apexUrl = new URL('/services/apexrest/commerce/search', instanceUrl);
 
+        // Debug: log the Apex host we're calling (no secrets)
+        // eslint-disable-next-line no-console
+        console.log('Calling Apex search at host:', apexUrl.hostname);
+
         const response = await fetch(apexUrl.toString(), {
             method: 'POST',
             headers: {
@@ -219,7 +223,9 @@ export async function POST(request: Request) {
 
         if (!response.ok) {
             const error = await response.text();
-            console.error('Apex search API error:', error);
+            // Log truncated HTML/text response for debugging
+            // eslint-disable-next-line no-console
+            console.error('Apex search API error status', response.status, 'body:', error && error.substring(0, 300));
             throw new Error(`Apex search API returned ${response.status}: ${error}`);
         }
 

@@ -40,24 +40,28 @@ global with sharing class CartApi {
 
             // -------------------------------------------------
             // 3. Resolve Buyer Account (SERVER SIDE)
-            // MVP: first active Buyer Account
+            // MVP: first active Buyer Account -> use the related Account Id
             // -------------------------------------------------
             Id buyerAccountId = [
-                SELECT Id
+                SELECT AccountId
                 FROM BuyerAccount
                 WHERE IsActive = true
                 LIMIT 1
-            ].Id;
+            ].AccountId;
+
+            if (buyerAccountId == null) {
+                return error(response, httpRes, 400, 'No buyer AccountId found on BuyerAccount record');
+            }
 
             // -------------------------------------------------
             // 4. Get or create ACTIVE cart
             // -------------------------------------------------
             ConnectApi.CartSummary summary =
                 ConnectApi.CommerceCart.getOrCreateActiveCartSummary(
-                    webStoreId,
-                    buyerAccountId,
-                    'active'
-                );
+                        webStoreId,
+                        buyerAccountId,
+                        'active'
+                    );
 
             // -------------------------------------------------
             // 5. Load real WebCart (SOURCE OF TRUTH)
