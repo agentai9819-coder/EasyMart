@@ -1,10 +1,11 @@
-(function() {
+(function () {
     // Check if widget already exists
     if (document.getElementById('nextjs-chat-button')) {
         return;
     }
 
     const chatButton = document.createElement('button');
+    const API_BASE = 'https://chat-widget-sage.vercel.app';
     chatButton.id = 'nextjs-chat-button';
     chatButton.innerText = '💬';
     chatButton.style.cssText = `
@@ -65,11 +66,11 @@
         align-items: center;
         border-radius: 8px 8px 0 0;
     `;
-    
+
     const title = document.createElement('h3');
     title.style.cssText = 'margin: 0; font-size: 16px;';
     title.textContent = 'Product Search Chat';
-    
+
     const closeBtn = document.createElement('button');
     closeBtn.id = 'close-chat';
     closeBtn.textContent = '✕';
@@ -82,13 +83,13 @@
         padding: 0;
         margin: 0;
     `;
-    
+
     // Attach close button event listener IMMEDIATELY
     closeBtn.onclick = (e) => {
         e.stopPropagation();
         chatWindow.style.display = 'none';
     };
-    
+
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -180,8 +181,8 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
             try {
-                // Call backend search API
-                const searchResponse = await fetch('/api/search', {
+                // Call backend search API  // await fetch('/api/search', removed from line 185
+                const searchResponse = await fetch(`${API_BASE}/api/search`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -211,7 +212,19 @@
                     return;
                 }
 
-                const data = await searchResponse.json();
+                //const data = await searchResponse.json();
+                const text = await searchResponse.text();
+
+                if (!searchResponse.ok) {
+                    throw new Error(`Search failed (${searchResponse.status}): ${text}`);
+                }
+
+                //CRITICAL SAFETY CHECK
+                if (!searchResponse.headers.get('content-type')?.includes('application/json')) {
+                    throw new Error('Non-JSON response from search API: ' + text.slice(0, 100));
+                }
+
+                const data = JSON.parse(text);
 
                 // Add bot response message
                 const botMsg = document.createElement('div');
@@ -405,7 +418,8 @@
             cartBtn.textContent = 'Adding...';
 
             try {
-                const cartResponse = await fetch('/api/cart/add', {
+                //await fetch('/api/cart/add', replaced with fetch to API_BASE
+                const cartResponse = await fetch(`${API_BASE}/api/cart/add`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
