@@ -22,7 +22,18 @@ export async function POST(request: Request) {
                 body: JSON.stringify({ query: message, pageSize: 6 }),
             });
 
-            const data = await resp.json();
+            //const data = await resp.json();
+            const text = await resp.text();
+
+            if (!resp.ok) {
+                throw new Error(`Search API failed (${resp.status}): ${text.slice(0, 200)}`);
+            }
+
+            if (!resp.headers.get('content-type')?.includes('application/json')) {
+                throw new Error(`Non-JSON response from search API: ${text.slice(0, 200)}`);
+            }
+
+            const data = JSON.parse(text);
             // Debug: log whether products were returned
             // eslint-disable-next-line no-console
             console.log('/api/chat -> /api/search response status', resp.status, 'products:', Array.isArray(data.products) ? data.products.length : 0);
