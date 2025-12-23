@@ -21,11 +21,12 @@ export async function DELETE(request: Request) {
         // eslint-disable-next-line no-console
         console.log(`Removing cart item ${cartItemId}`);
 
-        // Call Apex CartApi endpoint (same as add-to-cart, but using DELETE)
+        // Some Salesforce orgs treat DELETE bodies inconsistently.
+        // Use PATCH with quantity=0 which the Apex `updateCartItem` treats as delete.
         const deleteResponse = await callSalesforceApi(
             '/services/apexrest/CartApi',
-            'DELETE',
-            { cartItemId }
+            'PATCH',
+            { cartItemId, quantity: 0 }
         );
 
         if (!deleteResponse?.success) {

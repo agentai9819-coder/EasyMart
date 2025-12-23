@@ -222,6 +222,69 @@ global static GetCartResponse getCart() {
     }
 
     /* =================================================
+       DELETE CART ITEM (explicit DELETE handler)
+       ================================================= */
+    @HttpDelete
+    global static DeleteCartItemResponse deleteCartItem() {
+
+        RestResponse res = RestContext.response;
+        DeleteCartItemResponse out = new DeleteCartItemResponse();
+
+        try {
+            DeleteCartItemRequest req =
+                (DeleteCartItemRequest) JSON.deserialize(
+                    RestContext.request.requestBody.toString(),
+                    DeleteCartItemRequest.class
+                );
+
+            if (String.isBlank(req.cartItemId)) {
+                return errorDelete(out, res, 400, 'cartItemId is required');
+            }
+
+            Id webStoreId = [
+                SELECT Id FROM WebStore
+                WHERE Name = 'FantasticEcomm'
+                LIMIT 1
+            ].Id;
+
+            Id buyerAccountId = '001dL00001jFm6lQAC';
+
+            ConnectApi.CartSummary summary =
+                ConnectApi.CommerceCart.getOrCreateActiveCartSummary(
+                    webStoreId,
+                    buyerAccountId,
+                    'active'
+                );
+
+            WebCart cart = [
+                SELECT Id, AccountId
+                FROM WebCart
+                WHERE Id = :summary.cartId
+                LIMIT 1
+            ];
+
+            ConnectApi.CommerceCart.deleteCartItem(
+                webStoreId,
+                cart.AccountId,
+                cart.Id,
+                req.cartItemId
+            );
+
+            out.cartItemId = req.cartItemId;
+            out.success = true;
+            out.message = 'Item removed';
+            res.statusCode = 200;
+
+        } catch (Exception e) {
+            out.success = false;
+            out.message = e.getMessage();
+            res.statusCode = 500;
+        }
+
+        return out;
+    }
+
+    /* =================================================
        DTOs
        ================================================= */
     global class AddToCartRequest {
@@ -245,6 +308,16 @@ global static GetCartResponse getCart() {
         public Boolean success;
         public String message;
         public Integer quantity;
+        public String cartItemId;
+    }
+
+    global class DeleteCartItemRequest {
+        public String cartItemId;
+    }
+
+    global class DeleteCartItemResponse {
+        public Boolean success;
+        public String message;
         public String cartItemId;
     }
 
@@ -278,6 +351,18 @@ global static GetCartResponse getCart() {
 
     private static UpdateCartItemResponse errorUpdate(
         UpdateCartItemResponse r,
+        RestResponse res,
+        Integer status,
+        String msg
+    ) {
+        r.success = false;
+        r.message = msg;
+        res.statusCode = status;
+        return r;
+    }
+
+    private static DeleteCartItemResponse errorDelete(
+        DeleteCartItemResponse r,
         RestResponse res,
         Integer status,
         String msg

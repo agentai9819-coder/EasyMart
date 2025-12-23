@@ -109,7 +109,8 @@ async function callSalesforceApi(
             },
         };
 
-        if (body && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
+        // Include body for methods that support a request payload (POST, PATCH, PUT, DELETE)
+        if (body && method !== 'GET' && method !== 'HEAD') {
             fetchOptions.body = JSON.stringify(body);
         }
 
