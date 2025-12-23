@@ -1,6 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage } from '@/types';
 
+interface CartItem {
+    quantity: number;
+    cartItemId: string;
+}
+
 interface ChatWindowProps {
     messages: ChatMessage[];
     input: string;
@@ -19,10 +24,154 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     onClose,
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [cart, setCart] = useState<Record<string, CartItem>>({});
+    const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    const handleAddToCart = async (product: any, e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        setUpdatingItemId(product.id);
+        try {
+            const response = await fetch('/api/cart/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: product.id, quantity: 1 }),
+            });
+            const data = await response.json();
+            console.log('🔍 [CHAT CART ADD] Response:', JSON.stringify(data, null, 2));
+            if (data.success && data.cartItemId) {
+                setCart((prev) => ({
+                    ...prev,
+                    [product.id]: { quantity: 1, cartItemId: data.cartItemId },
+                }));
+                console.log(`✅ Added ${product.name} to cart | CartID: ${data.cartId} | CartItemID: ${data.cartItemId}`);
+            } else if (data.success && data.cartId) {
+                // If cartItemId wasn't returned, fetch cart lines to resolve the new item's id
+                console.log('ℹ️ cartItemId missing — fetching cart lines to resolve item id');
+                try {
+                    const cartResp = await fetch('/api/cart/get');
+                    const cartData = await cartResp.json();
+                    if (cartData.success && cartData.cart && Array.isArray(cartData.cart.lines)) {
+                        const found = cartData.cart.lines.find((l: any) => l.productId === product.id);
+                        const foundId = found?.cartItemId;
+                        if (foundId) {
+                            setCart((prev) => ({ ...prev, [product.id]: { quantity: found.quantity || 1, cartItemId: foundId } }));
+                            console.log(`✅ Resolved cartItemId via GET cart: ${foundId}`);
+                        } else {
+                            console.warn('⚠️ Could not find created cart line for product after add');
+                            setCart((prev) => ({ ...prev, [product.id]: { quantity: 1, cartItemId: '' } }));
+                        }
+                    }
+                } catch (err) {
+                    console.error('❌ Error fetching cart after add:', err);
+                    setCart((prev) => ({ ...prev, [product.id]: { quantity: 1, cartItemId: '' } }));
+                }
+            } else {
+                console.error(`❌ Failed to add ${product.name}:`, data.error);
+            }
+        } catch (err) {
+            console.error(`❌ Error adding ${product.name}:`, err);
+        } finally {
+            setUpdatingItemId(null);
+        }
+    };
+
+    const handleIncreaseQuantity = async (product: any, e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        const cartItem = cart[product.id];
+        if (!cartItem) return;
+        const newQuantity = cartItem.quantity + 1;
+        setUpdatingItemId(product.id);
+        try {
+            const response = await fetch('/api/cart/update', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cartItemId: cartItem.cartItemId, quantity: newQuantity }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setCart((prev) => ({
+                    ...prev,
+                    [product.id]: { ...prev[product.id], quantity: newQuantity },
+                }));
+                console.log(`📈 Updated ${product.name} quantity to ${newQuantity}`);
+            }
+        } catch (err) {
+            console.error(`❌ Error updating quantity:`, err);
+        } finally {
+            setUpdatingItemId(null);
+        }
+    };
+
+    const handleDecreaseQuantity = async (product: any, e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        const cartItem = cart[product.id];
+        if (!cartItem) return;
+        const newQuantity = cartItem.quantity - 1;
+        setUpdatingItemId(product.id);
+        try {
+            if (newQuantity === 0) {
+                const response = await fetch('/api/cart/remove', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cartItemId: cartItem.cartItemId }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    setCart((prev) => {
+                        const updated = { ...prev };
+                        delete updated[product.id];
+                        return updated;
+                    });
+                    console.log(`🗑️ Removed ${product.name} from cart`);
+                }
+            } else {
+                const response = await fetch('/api/cart/update', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cartItemId: cartItem.cartItemId, quantity: newQuantity }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    setCart((prev) => ({
+                        ...prev,
+                        [product.id]: { ...prev[product.id], quantity: newQuantity },
+                    }));
+                    console.log(`📉 Updated ${product.name} quantity to ${newQuantity}`);
+                }
+            }
+        } catch (err) {
+            console.error(`❌ Error updating quantity:`, err);
+        } finally {
+            setUpdatingItemId(null);
+        }
+    };
+
+    const handleDeleteFromCart = async (product: any, e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        const cartItem = cart[product.id];
+        if (!cartItem) return;
+        setUpdatingItemId(product.id);
+        try {
+            const response = await fetch('/api/cart/remove', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cartItemId: cartItem.cartItemId }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setCart((prev) => {
+                    const updated = { ...prev };
+                    delete updated[product.id];
+                    return updated;
+                });
+                console.log(`🗑️ Removed ${product.name} from cart`);
+            }
+        } catch (err) {
+            console.error(`❌ Error removing item:`, err);
+        } finally {
+            setUpdatingItemId(null);
+        }
+    };
 
     return (
         <div className="chat-window" style={styles.container}>
@@ -63,17 +212,70 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                             {/* Render product cards when bot message includes structured products */}
                             {msg.products && msg.products.length > 0 && (
                                 <div style={styles.productList}>
-                                    {msg.products.map((p) => (
-                                        <div key={p.id} style={styles.productCardInline}>
-                                            {p.imageUrl && (
-                                                <img src={p.imageUrl} alt={p.name} style={styles.productThumb} />
-                                            )}
-                                            <div style={styles.productInfo}>
-                                                <div style={styles.productName}>{p.name}</div>
-                                                <div style={styles.productPrice}>${p.price}</div>
+                                    {msg.products.map((p) => {
+                                        const cartItem = cart[p.id];
+                                        const isUpdating = updatingItemId === p.id;
+                                        return (
+                                            <div key={p.id} style={styles.productCardInline}>
+                                                <div style={styles.productImageContainer}>
+                                                    {p.imageUrl ? (
+                                                        <img src={p.imageUrl} alt={p.name} style={styles.productThumb} />
+                                                    ) : (
+                                                        <div style={styles.productThumbPlaceholder}>No Image</div>
+                                                    )}
+                                                </div>
+                                                <div style={styles.productInfo}>
+                                                    <div style={styles.productName}>{p.name}</div>
+                                                    <div style={styles.productPrice}>${p.price.toFixed(2)}</div>
+                                                    <div style={styles.actionButtons}>
+                                                        {cartItem ? (
+                                                            <>
+                                                                <button
+                                                                    style={styles.quantityBtn}
+                                                                    onClick={(e) => handleDecreaseQuantity(p, e)}
+                                                                    disabled={isUpdating}
+                                                                >
+                                                                    −
+                                                                </button>
+                                                                <span style={styles.quantityDisplay}>{cartItem.quantity}</span>
+                                                                <button
+                                                                    style={styles.quantityBtn}
+                                                                    onClick={(e) => handleIncreaseQuantity(p, e)}
+                                                                    disabled={isUpdating}
+                                                                >
+                                                                    +
+                                                                </button>
+                                                                <button
+                                                                    style={styles.deleteBtn}
+                                                                    onClick={(e) => handleDeleteFromCart(p, e)}
+                                                                    disabled={isUpdating}
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                style={styles.addToCartBtn}
+                                                                onClick={(e) => handleAddToCart(p, e)}
+                                                                disabled={isUpdating}
+                                                            >
+                                                                {isUpdating ? 'Adding...' : '🛒 Add to Cart'}
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            style={styles.viewDetailsBtn}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                console.log(`View details for ${p.name}`);
+                                                            }}
+                                                        >
+                                                            👁️ Details
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -171,28 +373,118 @@ const styles = {
     productCardInline: {
         display: 'flex' as const,
         gap: '8px',
-        padding: '8px',
-        border: '1px solid #e9ecef',
+        padding: '10px',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        backgroundColor: '#fff',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    },
+    productImageContainer: {
+        flexShrink: 0,
+        width: '70px',
+        height: '70px',
+        backgroundColor: '#f5f5f5',
         borderRadius: '6px',
-        alignItems: 'center' as const,
+        overflow: 'hidden',
+        display: 'flex' as const,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     productThumb: {
-        width: '64px',
-        height: '64px',
-        objectFit: 'cover' as const,
-        borderRadius: '4px',
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain' as const,
+        padding: '4px',
+    },
+    productThumbPlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#e9ecef',
+        display: 'flex' as const,
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#999',
+        fontSize: '11px',
+        textAlign: 'center' as const,
+        padding: '4px',
     },
     productInfo: {
         display: 'flex' as const,
         flexDirection: 'column' as const,
+        flex: 1,
+        justifyContent: 'space-between' as const,
     },
     productName: {
-        fontSize: '14px',
+        fontSize: '13px',
         fontWeight: 600,
+        color: '#333',
+        marginBottom: '2px',
     },
     productPrice: {
         color: '#0070f3',
         fontWeight: 'bold' as const,
+        fontSize: '14px',
+        marginBottom: '6px',
+    },
+    actionButtons: {
+        display: 'flex' as const,
+        gap: '4px',
+    },
+    addToCartBtn: {
+        flex: 1,
+        padding: '4px 6px',
+        backgroundColor: '#0070f3',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
+    },
+    viewDetailsBtn: {
+        flex: 1,
+        padding: '4px 6px',
+        backgroundColor: '#f0f0f0',
+        color: '#333',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+    },
+    quantityBtn: {
+        flex: 0,
+        padding: '4px 6px',
+        backgroundColor: '#f0f0f0',
+        color: '#333',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
+    },
+    quantityDisplay: {
+        flex: 0,
+        padding: '4px 4px',
+        fontSize: '11px',
+        fontWeight: '600',
+        minWidth: '20px',
+        textAlign: 'center' as const,
+    },
+    deleteBtn: {
+        flex: 0,
+        padding: '4px 6px',
+        backgroundColor: '#ffebee',
+        color: '#c41c3b',
+        border: '1px solid #ffcdd2',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
     },
     inputContainer: {
         display: 'flex' as const,

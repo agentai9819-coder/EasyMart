@@ -45,6 +45,11 @@ export async function POST(request: Request) {
             payload
         );
 
+        // eslint-disable-next-line no-console
+        console.log('[APEX RESPONSE] Full Apex response:', JSON.stringify(apexResponse, null, 2));
+        // eslint-disable-next-line no-console
+        console.log('[APEX RESPONSE] CartItemID from Apex:', apexResponse?.cartItemId);
+
         if (!apexResponse.success) {
             return NextResponse.json(
                 { 
@@ -55,13 +60,19 @@ export async function POST(request: Request) {
             );
         }
 
-        return NextResponse.json({
+        const responseData = {
             success: true,
             message: apexResponse.message,
             cartId: apexResponse.cartId,
+            cartItemId: apexResponse.cartItemId,
             productName: apexResponse.productName,
             quantity: apexResponse.quantity,
-        });
+        };
+
+        // eslint-disable-next-line no-console
+        console.log('[NEXTJS RESPONSE] Sending to frontend:', JSON.stringify(responseData, null, 2));
+
+        return NextResponse.json(responseData);
     } catch (error) {
         console.error('Cart API error:', error);
         return NextResponse.json(
