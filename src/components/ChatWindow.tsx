@@ -173,6 +173,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         }
     };
 
+    // Build an SEO-friendly slug from product name (simple safe implementation)
+    const slugify = (text: string) =>
+        text
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+    // Open the Salesforce PDP for the product.
+    // PDP URL pattern: https://{siteDomain}/{storePath}/product/{seoSlug}/{productId}
+    // We use window.location.origin as the current site base URL and default store path '/FantasticEcomm'.
+    const handleViewDetails = (product: any, e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        try {
+            console.log('handleViewDetails called');
+            console.log('Product ID:', product.id);
+            console.log('Product Name:', product.name);
+            const siteOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+            const storePath = '/FantasticEcomm'; // adjust this if your store path changes
+            const seoSlug = product.name ? slugify(product.name) : 'product';
+
+            // PDP URL built here
+            const pdpUrl = `${siteOrigin}${storePath}/product/${encodeURIComponent(seoSlug)}/${encodeURIComponent(product.id)}`;
+
+            // LOG: show the built URL and chosen redirect behavior
+            // This helps test which URL will be opened and whether the code path is executed
+            // eslint-disable-next-line no-console
+            console.log('[VIEW DETAILS] siteOrigin:', siteOrigin);
+            // eslint-disable-next-line no-console
+            console.log('[VIEW DETAILS] pdpUrl:', pdpUrl);
+            // eslint-disable-next-line no-console
+            console.log('[VIEW DETAILS] opening in new tab');
+
+            // Redirect happens here. Using window.open to open in a new tab.
+            //window.open(pdpUrl, '_blank');
+            // To open in same tab, replace with: window.location.href = pdpUrl;
+            window.location.href = pdpUrl;
+        } catch (err) {
+            console.error('Failed to open product details page:', err);
+        }
+    };
+
     return (
         <div className="chat-window" style={styles.container}>
             <div style={styles.header}>
@@ -265,8 +308,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                                         <button
                                                             style={styles.viewDetailsBtn}
                                                             onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                console.log(`View details for ${p.name}`);
+                                                                console.log('View Details clicked');
+                                                                console.log('Product:', p);
+                                                                handleViewDetails(p, e);
                                                             }}
                                                         >
                                                             👁️ Details
