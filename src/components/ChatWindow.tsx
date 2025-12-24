@@ -207,14 +207,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             // eslint-disable-next-line no-console
             console.log('[VIEW DETAILS] opening in new tab');
 
-            // Redirect happens here. Use `window.open` to open in a new tab.
-            // This works when the chat widget runs inside an iframe on the Salesforce page.
-            // const newWin = window.open(pdpUrl, '_blank');
-            // if (!newWin) {
                 // Popup blocked or failed — fall back to same-tab navigation
                 console.warn('[VIEW DETAILS] popup blocked, navigating in same tab');
                 window.location.href = pdpUrl;
             // }
+                // Redirect attempts. Different hosting contexts require different approaches:
+                // 1) Try opening a new tab (works in most cases)
+                // 2) If blocked, try opening in the top window (useful when widget is embedded in an iframe)
+                // 3) If that fails, fall back to same-tab navigation
+                // All attempts log their outcome so you can inspect the browser console on the Salesforce page.
+                try {
+                    const newWin = window.open(pdpUrl, '_blank');
+                    if (newWin) {
+                        console.log('[VIEW DETAILS] opened new tab successfully');
+                        return;
+                    }
+                    console.warn('[VIEW DETAILS] window.open returned null (popup blocked?)');
+                } catch (errOpen) {
+                    console.warn('[VIEW DETAILS] window.open threw:', errOpen);
+                }
+
+                // If we're inside an iframe, try navigating the top window. This will work unless the iframe
+                // is sandboxed or the browser prevents cross-origin navigation. We'll catch and log errors.
+                try {
+                    if (typeof window !== 'undefined' && window.top && window.top !== window.self) {
+                        try {
+                            window.top.location.href = pdpUrl;
+                            console.log('[VIEW DETAILS] navigated top window to PDP');
+                            return;
+                        } catch (errTop) {
+                            console.warn('[VIEW DETAILS] window.top.location navigation failed:', errTop);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('[VIEW DETAILS] checking window.top failed:', err);
+                }
+
+                // Final fallback: same-tab navigation
+                try {
+                    window.location.href = pdpUrl;
+                    console.log('[VIEW DETAILS] navigated current window to PDP (fallback)');
+                } catch (errHref) {
+                    console.error('[VIEW DETAILS] final navigation failed:', errHref);
+                }
         } catch (err) {
             console.error('Failed to open product details page:', err);
         }
