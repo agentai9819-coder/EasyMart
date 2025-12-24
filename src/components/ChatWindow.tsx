@@ -191,13 +191,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             console.log('handleViewDetails called');
             console.log('Product ID:', product.id);
             console.log('Product Name:', product.name);
-            const siteOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+            const siteOrigin = 'https://orgfarm-e6b615be40-dev-ed.develop.my.site.com'; //typeof window !== 'undefined' ? window.location.origin : '';
             const storePath = '/FantasticEcomm'; // adjust this if your store path changes
             const seoSlug = product.name ? slugify(product.name) : 'product';
 
             // PDP URL built here
             const pdpUrl = `${siteOrigin}${storePath}/product/${encodeURIComponent(seoSlug)}/${encodeURIComponent(product.id)}`;
-
+              
             // LOG: show the built URL and chosen redirect behavior
             // This helps test which URL will be opened and whether the code path is executed
             // eslint-disable-next-line no-console
@@ -207,10 +207,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             // eslint-disable-next-line no-console
             console.log('[VIEW DETAILS] opening in new tab');
 
-            // Redirect happens here. Using window.open to open in a new tab.
-            //window.open(pdpUrl, '_blank');
-            // To open in same tab, replace with: window.location.href = pdpUrl;
-            window.location.href = pdpUrl;
+            // Redirect happens here. Use `window.open` to open in a new tab.
+            // This works when the chat widget runs inside an iframe on the Salesforce page.
+            // const newWin = window.open(pdpUrl, '_blank');
+            // if (!newWin) {
+                // Popup blocked or failed — fall back to same-tab navigation
+                console.warn('[VIEW DETAILS] popup blocked, navigating in same tab');
+                window.location.href = pdpUrl;
+            // }
         } catch (err) {
             console.error('Failed to open product details page:', err);
         }
@@ -243,14 +247,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 ) : (
                     messages.map((msg) => (
                         <div key={msg.id}>
-                            <div
-                                style={{
-                                    ...styles.message,
-                                    ...(msg.sender === 'user' ? styles.userMessage : styles.botMessage),
-                                }}
-                            >
-                                {msg.content}
-                            </div>
+                            {/* Only show plain text content when there are no structured product cards */}
+                            {(!msg.products || msg.products.length === 0) && (
+                                <div
+                                    style={{
+                                        ...styles.message,
+                                        ...(msg.sender === 'user' ? styles.userMessage : styles.botMessage),
+                                    }}
+                                >
+                                    {msg.content}
+                                </div>
+                            )}
 
                             {/* Render product cards when bot message includes structured products */}
                             {msg.products && msg.products.length > 0 && (
