@@ -25,7 +25,7 @@ export async function DELETE(request: Request) {
         // Use PATCH with quantity=0 which the Apex `updateCartItem` treats as delete.
         const deleteResponse = await callSalesforceApi(
             '/services/apexrest/CartApi',
-            'PATCH',
+            'POST',
             { cartItemId, quantity: 0 }
         );
 

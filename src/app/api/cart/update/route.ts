@@ -31,7 +31,7 @@ export async function PATCH(request: Request) {
         // Call Apex CartApi endpoint (same as add-to-cart, but using PATCH)
         const updateResponse = await callSalesforceApi(
             '/services/apexrest/CartApi',
-            'PATCH',
+            'POST',
             { cartItemId, quantity }
         );
 
