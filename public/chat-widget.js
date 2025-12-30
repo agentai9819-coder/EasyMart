@@ -28,7 +28,7 @@
 
     chatButton.onmouseover = () => {
         chatButton.style.transform = 'scale(1.1)';
-        chatButton.style.boxShadow = '0 6px 16px rgba(0, 112, 243, 0.6)';
+        chatButton.style.boxShadow = '0 6px 16px rgba(0, 112,243, 0.6)';
     };
 
     chatButton.onmouseout = () => {
@@ -186,6 +186,10 @@
             console.warn('cw-debug-overlay failed', err);
         }
     })();
+
+    // <-- Add this creation so inputContainer exists before we set styles on it
+    const inputContainer = document.createElement('div');
+    inputContainer.id = 'nextjs-chat-input';
 
     inputContainer.style.cssText = `
         display: flex;
