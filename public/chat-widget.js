@@ -46,7 +46,7 @@
         bottom: 90px;
         right: 20px;
         width: 350px;
-        height: 500px;
+        max-height: calc(100vh - 120px);
         z-index: 999999;
         background-color: white;
         border: 1px solid #e9ecef;
@@ -196,6 +196,11 @@
         gap: 8px;
         padding: 12px;
         border-top: 1px solid #e9ecef;
+        flex-shrink: 0;
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        z-index: 2;
     `;
 
     const input = document.createElement('input');
@@ -207,6 +212,8 @@
         border: 1px solid #e9ecef;
         border-radius: 4px;
         font-size: 14px;
+        display: block;
+        min-width: 0;
     `;
 
     const sendBtn = document.createElement('button');
@@ -219,6 +226,7 @@
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
+        flex-shrink: 0;
     `;
 
     sendBtn.onclick = async () => {
