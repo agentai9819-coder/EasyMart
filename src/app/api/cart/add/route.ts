@@ -2,16 +2,6 @@ import { NextResponse } from 'next/server';
 import { callSalesforceApi } from '@/lib/salesforceAuth';
 import { validateEnvironment } from '@/lib/envConfig';
 
-const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
-export function OPTIONS() {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-}
-
 export async function POST(request: Request) {
     try {
         // Validate environment variables are configured
@@ -61,7 +51,13 @@ export async function POST(request: Request) {
         console.log('[APEX RESPONSE] CartItemID from Apex:', apexResponse?.cartItemId);
 
         if (!apexResponse.success) {
-            return NextResponse.json({ success: false, error: apexResponse.message || 'Failed to add item to cart' }, { status: 400, headers: CORS_HEADERS });
+            return NextResponse.json(
+                { 
+                    success: false,
+                    error: apexResponse.message || 'Failed to add item to cart',
+                },
+                { status: 400 }
+            );
         }
 
         const responseData = {
@@ -76,9 +72,15 @@ export async function POST(request: Request) {
         // eslint-disable-next-line no-console
         console.log('[NEXTJS RESPONSE] Sending to frontend:', JSON.stringify(responseData, null, 2));
 
-        return NextResponse.json(responseData, { headers: CORS_HEADERS });
+        return NextResponse.json(responseData);
     } catch (error) {
         console.error('Cart API error:', error);
-        return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500, headers: CORS_HEADERS });
+        return NextResponse.json(
+            { 
+                success: false,
+                error: error instanceof Error ? error.message : 'Internal server error',
+            },
+            { status: 500 }
+        );
     }
 }

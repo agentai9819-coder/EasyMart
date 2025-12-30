@@ -501,7 +501,7 @@
                 const newQty = (current.quantity || 0) + 1;
                 try {
                     const resp = await fetch(`${API_BASE}/api/cart/update`, {
-                        method: 'POST',
+                        method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cartItemId: current.cartItemId, quantity: newQty }),
                     });
@@ -547,10 +547,49 @@
                         errorMsg.textContent = cartData.error || 'Failed to add item to cart.';
                         messagesContainer.appendChild(errorMsg);
                     } else {
-                        const cartItemId = cartData.cartItemId || '';
-                        cartState[product.id] = { quantity: 1, cartItemId };
-                        console.log('[CHAT WIDGET] added to cart', product.id, cartItemId);
-                        renderQuantityControls();
+                                const cartItemId = cartData.cartItemId || '';
+                                if (cartItemId) {
+                                    cartState[product.id] = { quantity: 1, cartItemId };
+                                    console.log('[CHAT WIDGET] added to cart', product.id, cartItemId);
+                                    renderQuantityControls();
+                                } else if (cartData.cartId) {
+                                    // cart created but cartItemId not returned; attempt to resolve via GET cart
+                                    try {
+                                        const getResp = await fetch(`${API_BASE}/api/cart/get`, { method: 'GET' });
+                                        const getData = await getResp.json();
+                                        if (getResp.ok && getData.cart && Array.isArray(getData.cart.lines)) {
+                                            const found = getData.cart.lines.find(l => l.productId === product.id || l.productId === product.sku);
+                                            if (found && found.cartItemId) {
+                                                cartState[product.id] = { quantity: found.quantity || 1, cartItemId: found.cartItemId };
+                                                console.log('[CHAT WIDGET] resolved cartItemId via GET', found.cartItemId);
+                                                renderQuantityControls();
+                                            } else {
+                                                // Could not resolve cart line — keep Add visible and show notice
+                                                const infoMsg = document.createElement('div');
+                                                infoMsg.style.cssText = `align-self: flex-start; background-color: #fff3cd; color: #856404; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffeeba; max-width: 80%; font-size: 14px;`;
+                                                infoMsg.textContent = `${product.name} added — cart created. Quantity controls pending.`;
+                                                messagesContainer.appendChild(infoMsg);
+                                            }
+                                        } else {
+                                            const infoMsg = document.createElement('div');
+                                            infoMsg.style.cssText = `align-self: flex-start; background-color: #fff3cd; color: #856404; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffeeba; max-width: 80%; font-size: 14px;`;
+                                            infoMsg.textContent = `${product.name} added — cart created. Quantity controls pending.`;
+                                            messagesContainer.appendChild(infoMsg);
+                                        }
+                                    } catch (err) {
+                                        console.warn('[CHAT WIDGET] failed to resolve cartItemId after add', err);
+                                        const infoMsg = document.createElement('div');
+                                        infoMsg.style.cssText = `align-self: flex-start; background-color: #fff3cd; color: #856404; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffeeba; max-width: 80%; font-size: 14px;`;
+                                        infoMsg.textContent = `${product.name} added — cart created. Quantity controls pending.`;
+                                        messagesContainer.appendChild(infoMsg);
+                                    }
+                                } else {
+                                    console.error('[CHAT WIDGET] add failed (no cartItemId or cartId)', cartData);
+                                    const errorMsg = document.createElement('div');
+                                    errorMsg.style.cssText = `align-self: flex-start; background-color: #f8d7da; color: #721c24; padding: 8px 12px; border-radius: 6px; border: 1px solid #f5c6cb; max-width: 80%; word-wrap: break-word; font-size: 14px;`;
+                                    errorMsg.textContent = cartData.error || 'Failed to add item to cart.';
+                                    messagesContainer.appendChild(errorMsg);
+                                }
                         const successMsg = document.createElement('div');
                         successMsg.style.cssText = `
                             align-self: flex-start;
@@ -617,10 +656,10 @@
                 if (newQty === 0) {
                     try {
                         const resp = await fetch(`${API_BASE}/api/cart/remove`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ cartItemId: state.cartItemId }),
-                        });
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ cartItemId: state.cartItemId }),
+                            });
                         const data = await resp.json();
                         if (resp.ok) {
                             delete cartState[product.id];
@@ -636,7 +675,7 @@
                 } else {
                     try {
                         const resp = await fetch(`${API_BASE}/api/cart/update`, {
-                            method: 'POST',
+                            method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ cartItemId: state.cartItemId, quantity: newQty }),
                         });
@@ -668,7 +707,7 @@
                 const newQty = (cartState[product.id].quantity || 0) + 1;
                 try {
                     const resp = await fetch(`${API_BASE}/api/cart/update`, {
-                        method: 'POST',
+                        method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cartItemId: state.cartItemId, quantity: newQty }),
                     });
@@ -692,7 +731,7 @@
             delBtn.onclick = async () => {
                 try {
                     const resp = await fetch(`${API_BASE}/api/cart/remove`, {
-                        method: 'POST',
+                        method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cartItemId: state.cartItemId }),
                     });
