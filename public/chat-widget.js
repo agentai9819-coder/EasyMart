@@ -65,7 +65,6 @@
         padding: 16px;
         display: flex;
         justify-content: space-between;
-                        if (!cartResponse.ok) {
         border-radius: 8px 8px 0 0;
     `;
 
@@ -85,8 +84,6 @@
         padding: 0;
         margin: 0;
     `;
-                            try { 
-                                addBtn.textContent = `Add (${cartState[product.id].quantity})`; } catch (e) {}
 
     // Attach close button event listener IMMEDIATELY
     closeBtn.onclick = (e) => {
@@ -190,9 +187,6 @@
         }
     })();
 
-                        addBtn.disabled = false;
-                        // keep quantity shown if present
-                        if (!cartState[product.id]) addBtn.textContent = 'Add to Cart';
     inputContainer.style.cssText = `
         display: flex;
         gap: 8px;
