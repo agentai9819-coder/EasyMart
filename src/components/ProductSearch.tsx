@@ -107,7 +107,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onProductSelect }) => {
         setUpdatingItemId(product.id);
         try {
             const response = await fetch('/api/cart/update', {
-                method: 'PATCH',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cartItemId: cartItem.cartItemId, quantity: newQuantity }),
             });
@@ -139,7 +139,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onProductSelect }) => {
             if (newQuantity === 0) {
                 // Remove item if quantity reaches 0
                 const response = await fetch('/api/cart/remove', {
-                    method: 'DELETE',
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cartItemId: cartItem.cartItemId }),
                 });
@@ -157,7 +157,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onProductSelect }) => {
             } else {
                 // Update quantity
                 const response = await fetch('/api/cart/update', {
-                    method: 'PATCH',
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cartItemId: cartItem.cartItemId, quantity: newQuantity }),
                 });
@@ -187,7 +187,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onProductSelect }) => {
         setUpdatingItemId(product.id);
         try {
             const response = await fetch('/api/cart/remove', {
-                method: 'DELETE',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cartItemId: cartItem.cartItemId }),
             });

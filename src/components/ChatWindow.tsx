@@ -83,7 +83,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         setUpdatingItemId(product.id);
         try {
             const response = await fetch('/api/cart/update', {
-                method: 'PATCH',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cartItemId: cartItem.cartItemId, quantity: newQuantity }),
             });
@@ -111,7 +111,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         try {
             if (newQuantity === 0) {
                 const response = await fetch('/api/cart/remove', {
-                    method: 'DELETE',
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cartItemId: cartItem.cartItemId }),
                 });
@@ -126,7 +126,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
             } else {
                 const response = await fetch('/api/cart/update', {
-                    method: 'PATCH',
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cartItemId: cartItem.cartItemId, quantity: newQuantity }),
                 });
@@ -153,7 +153,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         setUpdatingItemId(product.id);
         try {
             const response = await fetch('/api/cart/remove', {
-                method: 'DELETE',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cartItemId: cartItem.cartItemId }),
             });

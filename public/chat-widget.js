@@ -495,13 +495,13 @@
         addBtn.onclick = async () => {
             console.log('[CHAT WIDGET] Add button clicked for', product.id);
             // If item already in cart, treat as increase by 1
-            if (cartState[product.id]) {
-                // call update
+                if (cartState[product.id]) {
+                // call update (use POST to avoid PATCH preflight restrictions)
                 const current = cartState[product.id];
                 const newQty = (current.quantity || 0) + 1;
                 try {
                     const resp = await fetch(`${API_BASE}/api/cart/update`, {
-                        method: 'PATCH',
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cartItemId: current.cartItemId, quantity: newQty }),
                     });
@@ -511,6 +511,7 @@
                         // update qty display if present
                         const qtySpan = controlsWrapper.querySelector('.cw-qty');
                         if (qtySpan) qtySpan.textContent = String(newQty);
+                        try { addBtn.textContent = `Add (${newQty})`; } catch (e) {}
                         console.log('[CHAT WIDGET] increased quantity to', newQty);
                     } else {
                         console.error('[CHAT WIDGET] increase failed', data);
@@ -596,7 +597,13 @@
             const existing = controlsWrapper.querySelector('.cw-qty-wrap');
             if (existing) existing.remove();
             const state = cartState[product.id];
-            if (!state) return;
+            // If no state, ensure Add button is visible and exit
+            if (!state) {
+                try { addBtn.style.display = ''; } catch (e) {}
+                return;
+            }
+            // Hide Add button when quantity controls are visible
+            try { addBtn.style.display = 'none'; } catch (e) {}
 
             const qtyWrap = document.createElement('div');
             qtyWrap.className = 'cw-qty-wrap';
@@ -610,7 +617,7 @@
                 if (newQty === 0) {
                     try {
                         const resp = await fetch(`${API_BASE}/api/cart/remove`, {
-                            method: 'DELETE',
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ cartItemId: state.cartItemId }),
                         });
@@ -618,7 +625,7 @@
                         if (resp.ok) {
                             delete cartState[product.id];
                             renderQuantityControls();
-                            try { addBtn.textContent = 'Add to Cart'; } catch (e) {}
+                            try { addBtn.style.display = ''; addBtn.textContent = 'Add to Cart'; } catch (e) {}
                             console.log('[CHAT WIDGET] removed', product.id);
                         } else {
                             console.error('[CHAT WIDGET] remove failed', data);
@@ -629,7 +636,7 @@
                 } else {
                     try {
                         const resp = await fetch(`${API_BASE}/api/cart/update`, {
-                            method: 'PATCH',
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ cartItemId: state.cartItemId, quantity: newQty }),
                         });
@@ -661,7 +668,7 @@
                 const newQty = (cartState[product.id].quantity || 0) + 1;
                 try {
                     const resp = await fetch(`${API_BASE}/api/cart/update`, {
-                        method: 'PATCH',
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cartItemId: state.cartItemId, quantity: newQty }),
                     });
@@ -685,7 +692,7 @@
             delBtn.onclick = async () => {
                 try {
                     const resp = await fetch(`${API_BASE}/api/cart/remove`, {
-                        method: 'DELETE',
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cartItemId: state.cartItemId }),
                     });
@@ -693,7 +700,7 @@
                     if (resp.ok) {
                         delete cartState[product.id];
                         renderQuantityControls();
-                        try { addBtn.textContent = 'Add to Cart'; } catch (e) {}
+                        try { addBtn.style.display = ''; addBtn.textContent = 'Add to Cart'; } catch (e) {}
                         console.log('[CHAT WIDGET] deleted', product.id);
                     } else {
                         console.error('[CHAT WIDGET] delete failed', data);
