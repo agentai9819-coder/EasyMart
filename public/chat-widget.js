@@ -85,7 +85,8 @@
         padding: 0;
         margin: 0;
     `;
-                            try { addBtn.textContent = `Add (${cartState[product.id].quantity})`; } catch (e) {}
+                            try { 
+                                addBtn.textContent = `Add (${cartState[product.id].quantity})`; } catch (e) {}
 
     // Attach close button event listener IMMEDIATELY
     closeBtn.onclick = (e) => {
